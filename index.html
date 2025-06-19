@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kalkulator Angka Kredit PNS</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; max-width: 600px; }
+    label, select, input, button { display: block; margin-top: 10px; width: 100%; padding: 8px; }
+    button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; margin-top: 15px; }
+    button:hover { background-color: #0056b3; }
+    .reset-btn { background-color: #dc3545; margin-top: 5px; }
+    .reset-btn:hover { background-color: #b02a37; }
+    .result { margin-top: 20px; padding: 10px; background: #f4f4f4; border-radius: 5px; }
+    .success { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>Kalkulator Angka Kredit PNS</h2>
+
+  <label for="kategori">Kategori:</label>
+  <select id="kategori" onchange="updateJabatan()">
+    <option value="">-- Pilih Kategori --</option>
+    <option value="KETERAMPILAN">KETERAMPILAN</option>
+    <option value="KEAHLIAN">KEAHLIAN</option>
+  </select>
+
+  <label for="jabatan">Jabatan:</label>
+  <select id="jabatan" onchange="updatePangkat()"></select>
+
+  <label for="pangkatSebelumnya">Pangkat Sebelumnya:</label>
+  <select id="pangkatSebelumnya"></select>
+
+  <label for="pangkatTujuan">Pangkat yang Dituju:</label>
+  <select id="pangkatTujuan"></select>
+
+  <label for="tahunKerja">Lama Masa Kerja (tahun):</label>
+  <input type="number" id="tahunKerja" placeholder="Masukkan jumlah tahun kerja">
+
+  <label for="akSaatIni">Atau Masukkan AK yang Dimiliki:</label>
+  <input type="number" id="akSaatIni" placeholder="Masukkan jumlah AK yang dimiliki">
+
+  <button onclick="hitung()">Hitung</button>
+  <button class="reset-btn" onclick="resetForm()">Reset</button>
+
+  <div class="result" id="output"></div>
+
+  <script>
+    const data = {
+      KETERAMPILAN: {
+        "Pemula": { "II/a": { koef: 3.75, naikPangkat: 15, naikJabatan: 25, dasar: 25 } },
+        "Terampil": {
+          "II/b": { koef: 5, naikPangkat: 20, naikJabatan: 40, dasar: 40 },
+          "II/c": { koef: 5, naikPangkat: 20, naikJabatan: 60, dasar: 60 },
+          "II/d": { koef: 5, naikPangkat: 20, naikJabatan: 100, dasar: 100 }
+        },
+        "Mahir": {
+          "III/a": { koef: 12.5, naikPangkat: 50, naikJabatan: 100, dasar: 100 },
+          "III/b": { koef: 25, naikPangkat: 100, naikJabatan: 200, dasar: 200 }
+        },
+        "Penyelia": {
+          "III/c": { koef: 25, naikPangkat: 100, naikJabatan: "x", dasar: 200 },
+          "III/d": { koef: 25, naikPangkat: 100, naikJabatan: "x", dasar: 200 }
+        }
+      },
+      KEAHLIAN: {
+        "Ahli Pertama": {
+          "III/a": { koef: 12.5, naikPangkat: 50, naikJabatan: 100, dasar: 100 },
+          "III/b": { koef: 12.5, naikPangkat: 50, naikJabatan: 200, dasar: 200 }
+        },
+        "Ahli Muda": {
+          "III/c": { koef: 25, naikPangkat: 100, naikJabatan: 200, dasar: 200 },
+          "III/d": { koef: 25, naikPangkat: 100, naikJabatan: 300, dasar: 300 }
+        },
+        "Ahli Madya": {
+          "IV/a": { koef: 37.5, naikPangkat: 150, naikJabatan: 400, dasar: 400 },
+          "IV/b": { koef: 37.5, naikPangkat: 150, naikJabatan: 450, dasar: 450 },
+          "IV/c": { koef: 37.5, naikPangkat: 150, naikJabatan: 450, dasar: 450 }
+        },
+        "Ahli Utama": {
+          "IV/d": { koef: 50, naikPangkat: 200, naikJabatan: 850, dasar: 850 },
+          "IV/e": { koef: 50, naikPangkat: 200, naikJabatan: "x", dasar: 850 }
+        }
+      }
+    };
+
+    function updateJabatan() {
+      const kategori = document.getElementById("kategori").value;
+      const jabatanSelect = document.getElementById("jabatan");
+      jabatanSelect.innerHTML = '<option value="">-- Pilih Jabatan --</option>';
+
+      if (kategori && data[kategori]) {
+        Object.keys(data[kategori]).forEach(jabatan => {
+          jabatanSelect.innerHTML += `<option value="${jabatan}">${jabatan}</option>`;
+        });
+      }
+
+      document.getElementById("pangkatSebelumnya").innerHTML = '';
+      document.getElementById("pangkatTujuan").innerHTML = '';
+      document.getElementById("output").innerHTML = '';
+    }
+
+    function updatePangkat() {
+      const kategori = document.getElementById("kategori").value;
+      const jabatan = document.getElementById("jabatan").value;
+      const pangkatSebelumnya = document.getElementById("pangkatSebelumnya");
+      const pangkatTujuan = document.getElementById("pangkatTujuan");
+
+      pangkatSebelumnya.innerHTML = '<option value="">-- Pilih Pangkat Sebelumnya --</option>';
+      pangkatTujuan.innerHTML = '<option value="">-- Pilih Pangkat yang Dituju --</option>';
+
+      if (kategori && jabatan && data[kategori][jabatan]) {
+        Object.keys(data[kategori][jabatan]).forEach(pangkat => {
+          pangkatSebelumnya.innerHTML += `<option value="${pangkat}">${pangkat}</option>`;
+          pangkatTujuan.innerHTML += `<option value="${pangkat}">${pangkat}</option>`;
+        });
+      }
+
+      document.getElementById("output").innerHTML = '';
+    }
+
+    function hitung() {
+      const kategori = document.getElementById("kategori").value;
+      const jabatan = document.getElementById("jabatan").value;
+      const pangkatAwal = document.getElementById("pangkatSebelumnya").value;
+      const pangkatTarget = document.getElementById("pangkatTujuan").value;
+      const tahunKerja = parseFloat(document.getElementById("tahunKerja").value || 0);
+      const akManual = parseFloat(document.getElementById("akSaatIni").value || 0);
+
+      if (kategori && jabatan && pangkatAwal && pangkatTarget) {
+        const info = data[kategori][jabatan][pangkatAwal];
+        const koef = info.koef;
+        const akDariTahun = tahunKerja > 0 ? tahunKerja * koef : 0;
+        const totalAK = akManual > 0 ? akManual : akDariTahun;
+
+        const target = data[kategori][jabatan][pangkatTarget];
+        if (!target) {
+          document.getElementById("output").innerHTML = `<span class='fail'>Data untuk pangkat tujuan tidak ditemukan.</span>`;
+          return;
+        }
+
+        let pangkatStatus = '', jabatanStatus = '';
+        if (totalAK > 0) {
+          pangkatStatus = totalAK >= target.naikPangkat ?
+            `<span class="success">AK mencukupi untuk naik pangkat ke ${pangkatTarget} ✅</span>` :
+            `<span class="fail">AK belum mencukupi untuk naik pangkat ke ${pangkatTarget} ❌</span>`;
+
+          jabatanStatus = target.naikJabatan === "x" ?
+            `<span class="fail">Tidak ada jenjang jabatan selanjutnya ❌</span>` :
+            (totalAK >= target.naikJabatan ?
+              `<span class="success">AK mencukupi untuk naik jabatan ✅</span>` :
+              `<span class="fail">AK belum mencukupi untuk naik jabatan ❌</span>`);
+        } else {
+          pangkatStatus = `<span class="fail">Mohon isi AK atau tahun kerja</span>`;
+        }
+
+        const html = `
+          <strong>Hasil Perhitungan:</strong><br>
+          Pangkat Saat Ini: <strong>${pangkatAwal}</strong><br>
+          Pangkat yang Dituju: <strong>${pangkatTarget}</strong><br>
+          Koefisien Tahunan: <strong>${koef}</strong><br>
+          Kebutuhan AK Naik Pangkat: <strong>${target.naikPangkat}</strong><br>
+          Kebutuhan AK Naik Jabatan: <strong>${target.naikJabatan}</strong><br>
+          Nilai Dasar: <strong>${target.dasar}</strong><br><br>
+          <strong>Total AK Anda (dihitung):</strong> ${totalAK}<br><br>
+          ${pangkatStatus}<br>
+          ${jabatanStatus}
+        `;
+        document.getElementById("output").innerHTML = html;
+      } else {
+        document.getElementById("output").innerHTML = "<span class='fail'>Mohon lengkapi semua pilihan.</span>";
+      }
+    }
+
+    function resetForm() {
+      document.getElementById("kategori").value = '';
+      document.getElementById("jabatan").innerHTML = '';
+      document.getElementById("pangkatSebelumnya").innerHTML = '';
+      document.getElementById("pangkatTujuan").innerHTML = '';
+      document.getElementById("tahunKerja").value = '';
+      document.getElementById("akSaatIni").value = '';
+      document.getElementById("output").innerHTML = '';
+    }
+  </script>
+
+</body>
+</html>
